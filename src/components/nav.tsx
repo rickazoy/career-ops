@@ -13,9 +13,11 @@ import {
   Briefcase,
   Moon,
   Sun,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth-provider";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -29,6 +31,7 @@ const navItems = [
 
 export function Nav() {
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -80,7 +83,12 @@ export function Nav() {
         })}
       </div>
 
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-1">
+        {user && (
+          <div className="px-3 py-2 mb-2">
+            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+          </div>
+        )}
         <Button
           variant="ghost"
           size="sm"
@@ -90,6 +98,17 @@ export function Nav() {
           {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           {dark ? "Light Mode" : "Dark Mode"}
         </Button>
+        {user && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={signOut}
+            className="w-full justify-start gap-2 text-muted-foreground"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </Button>
+        )}
       </div>
     </nav>
   );
