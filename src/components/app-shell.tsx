@@ -11,7 +11,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       {isLogin ? (
-        <>{children}</>
+        <div className="w-full min-h-screen">{children}</div>
       ) : (
         <>
           <Nav />

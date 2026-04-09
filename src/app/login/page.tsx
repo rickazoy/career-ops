@@ -3,11 +3,21 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Briefcase, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
+import {
+  Briefcase,
+  Loader2,
+  Mail,
+  Lock,
+  ArrowRight,
+  Target,
+  FileText,
+  MessageSquare,
+  TrendingUp,
+} from "lucide-react";
 
 export default function LoginPage() {
   return (
@@ -72,112 +82,158 @@ function LoginForm() {
     }
   }
 
+  const features = [
+    { icon: Target, label: "AI Job Evaluation", desc: "Score any role against your profile" },
+    { icon: FileText, label: "Tailored Resumes", desc: "Generate targeted resumes in seconds" },
+    { icon: MessageSquare, label: "Interview Prep", desc: "STAR stories & round-by-round coaching" },
+    { icon: TrendingUp, label: "Pipeline Tracker", desc: "Track every application end to end" },
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center">
-            <Briefcase className="w-7 h-7 text-primary-foreground" />
+    <div className="fixed inset-0 flex items-center justify-center bg-background overflow-auto">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-5xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        {/* Left — Branding & Features */}
+        <div className="hidden lg:flex flex-col gap-8">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+              <Briefcase className="w-7 h-7 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Career Ops</h1>
+              <p className="text-muted-foreground">AI Job Search Command Center</p>
+            </div>
           </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight">Career Ops</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              AI Job Search Command Center
-            </p>
+
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            Evaluate opportunities, generate tailored resumes, prep for interviews, and track
+            your pipeline — all powered by AI.
+          </p>
+
+          <div className="grid grid-cols-1 gap-4">
+            {features.map((f) => (
+              <div
+                key={f.label}
+                className="flex items-start gap-4 p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm"
+              >
+                <div className="p-2.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                  <f.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">{f.label}</p>
+                  <p className="text-sm text-muted-foreground">{f.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg text-center">
-              {mode === "login" ? "Sign in to your account" : "Create an account"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder={mode === "signup" ? "Min 6 characters" : ""}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
-                  {error}
-                </div>
-              )}
-
-              {message && (
-                <div className="text-sm text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2">
-                  {message}
-                </div>
-              )}
-
-              <Button type="submit" className="w-full gap-2" disabled={loading}>
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="w-4 h-4" />
-                )}
-                {mode === "login" ? "Sign In" : "Sign Up"}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              {mode === "login" ? (
-                <>
-                  Don&apos;t have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => { setMode("signup"); setError(null); setMessage(null); }}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Sign up
-                  </button>
-                </>
-              ) : (
-                <>
-                  Already have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => { setMode("login"); setError(null); setMessage(null); }}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Sign in
-                  </button>
-                </>
-              )}
+        {/* Right — Auth Card */}
+        <div className="w-full max-w-md mx-auto lg:mx-0 lg:ml-auto">
+          {/* Mobile logo */}
+          <div className="flex flex-col items-center gap-3 mb-8 lg:hidden">
+            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+              <Briefcase className="w-7 h-7 text-primary-foreground" />
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-center">
+              <h1 className="text-2xl font-bold tracking-tight">Career Ops</h1>
+              <p className="text-sm text-muted-foreground">AI Job Search Command Center</p>
+            </div>
+          </div>
+
+          <Card className="shadow-xl shadow-black/5 border-border/50">
+            <CardContent className="p-8">
+              <h2 className="text-xl font-semibold text-center mb-6">
+                {mode === "login" ? "Welcome back" : "Get started"}
+              </h2>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10 h-11"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder={mode === "signup" ? "Min 6 characters" : ""}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10 h-11"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-4 py-3">
+                    {error}
+                  </div>
+                )}
+
+                {message && (
+                  <div className="text-sm text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-4 py-3">
+                    {message}
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full h-11 gap-2 text-sm font-medium" disabled={loading}>
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                  {mode === "login" ? "Sign In" : "Create Account"}
+                </Button>
+              </form>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-card px-3 text-muted-foreground">
+                    {mode === "login" ? "New here?" : "Already registered?"}
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-11 text-sm"
+                onClick={() => {
+                  setMode(mode === "login" ? "signup" : "login");
+                  setError(null);
+                  setMessage(null);
+                }}
+              >
+                {mode === "login" ? "Create an account" : "Sign in instead"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
