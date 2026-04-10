@@ -17,7 +17,18 @@ import {
 } from "@/components/ui/select";
 import { getProfile, saveProfile } from "@/lib/store";
 import { Profile, Archetype } from "@/lib/types";
-import { User, Plus, X, Save, CheckCircle2 } from "lucide-react";
+import { getSupabaseClient } from "@/lib/supabase";
+import {
+  User,
+  Plus,
+  X,
+  Save,
+  CheckCircle2,
+  Upload,
+  FileText,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 
 const EMPTY_PROFILE: Profile = {
   name: "",
@@ -43,11 +54,35 @@ export default function ProfilePage() {
   const [newArchName, setNewArchName] = useState("");
   const [newArchLevel, setNewArchLevel] = useState("");
   const [newArchFit, setNewArchFit] = useState<Archetype["fit"]>("primary");
+  const [resumeFilename, setResumeFilename] = useState<string | null>(null);
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     getProfile().then(stored => {
       if (stored) setProfile(stored);
     });
+    // Load current resume info
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('co_profiles')
+        .select('resume_path, resume_filename')
+        .limit(1)
+        .single()
+        .then(({ data }) => {
+          if (data?.resume_filename) {
+            setResumeFilename(data.resume_filename);
+            if (data.resume_path) {
+              const { data: urlData } = supabase.storage
+                .from('resumes')
+                .getPublicUrl(data.resume_path);
+              setResumeUrl(urlData.publicUrl);
+            }
+          }
+        });
+    }
   }, []);
 
   async function handleSave() {
@@ -185,6 +220,106 @@ export default function ProfilePage() {
                 placeholder="https://janesmith.dev"
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Resume Upload */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Resume
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {resumeFilename ? (
+            <div className="flex items-center gap-3 p-4 rounded-lg border border-border/50 bg-muted/30">
+              <FileText className="w-8 h-8 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{resumeFilename}</p>
+                {resumeUrl && (
+                  <a
+                    href={resumeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline"
+                  >
+                    View resume
+                  </a>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={async () => {
+                  await fetch("/api/resume-upload", { method: "DELETE" });
+                  setResumeFilename(null);
+                  setResumeUrl(null);
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No resume uploaded. Upload a PDF or Word document to use when applying to jobs.
+            </p>
+          )}
+
+          {uploadError && (
+            <p className="text-sm text-destructive">{uploadError}</p>
+          )}
+
+          <div>
+            <input
+              type="file"
+              id="resume-upload"
+              accept=".pdf,.doc,.docx"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setUploading(true);
+                setUploadError("");
+
+                const formData = new FormData();
+                formData.append("resume", file);
+
+                try {
+                  const res = await fetch("/api/resume-upload", {
+                    method: "POST",
+                    body: formData,
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error);
+                  setResumeFilename(data.filename);
+                  setResumeUrl(data.url);
+                } catch (err) {
+                  setUploadError(err instanceof Error ? err.message : "Upload failed");
+                } finally {
+                  setUploading(false);
+                  e.target.value = "";
+                }
+              }}
+            />
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={uploading}
+              onClick={() => document.getElementById("resume-upload")?.click()}
+            >
+              {uploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {resumeFilename ? "Replace Resume" : "Upload Resume"}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              PDF or Word, max 10MB. Used when applying to jobs via ThePopeBot.
+            </p>
           </div>
         </CardContent>
       </Card>
