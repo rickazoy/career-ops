@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     const userPrompt = `## My Resume\n\n${resume_text}\n\n## My Goals\n\n${goals}`;
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-6-20250514",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 8192,
       messages: [{ role: "user", content: userPrompt }],
       system: SYSTEM_PROMPT,
