@@ -41,12 +41,19 @@ For EACH target role the user specifies, score alignment (1-10) and explain:
 - Formatting issues, gaps, inconsistencies, weak language
 
 ### 6. Rewritten Resume
-Generate a complete, improved resume in markdown that:
-- Elevates language to executive level
-- Leads with impact and strategic outcomes
-- Incorporates missing keywords for target roles
-- NEVER fabricates experience — only reframes and strengthens what exists
-- Follows a modern executive resume format
+
+CRITICAL: The rewritten resume MUST address EVERY issue you identified above. Specifically:
+- For EACH red flag you listed: fix it in the rewrite. If you flagged weak language, replace it. If you flagged missing metrics, add quantified results based on what's implied. If you flagged formatting issues, fix the structure.
+- For EACH gap identified in the role alignment analysis: strengthen or add content that closes that gap. If the resume lacks AI/ML strategy for a CAIO role, weave it into the experience bullets and summary using what exists. If board-level language is missing for a CTO role, elevate the framing.
+- For EACH "missing" keyword from the ATS analysis: incorporate it naturally into the summary, experience bullets, or competencies section.
+- For EACH section rated "weak" or "adequate": rewrite that section to address the specific issue and recommendation you gave.
+
+The rewrite should be a COMPLETE, ready-to-use resume — not a template with placeholders. It must:
+- Elevate all language to executive/C-suite level
+- Lead every bullet with impact and strategic outcomes, not tasks
+- Use the candidate's actual experience — NEVER fabricate, but DO reframe aggressively
+- Follow a modern executive resume format (Summary, Core Competencies, Experience, Education, Certifications)
+- Be 2 pages max when rendered
 
 ## Output Format
 
@@ -97,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
+      max_tokens: 12000,
       messages: [{ role: "user", content: userPrompt }],
       system: SYSTEM_PROMPT,
     });
