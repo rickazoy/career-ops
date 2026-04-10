@@ -28,6 +28,7 @@ import {
   Filter,
   Inbox,
   Loader2,
+  AlertCircle,
   ChevronDown,
   ChevronUp,
   RefreshCw,
@@ -363,7 +364,10 @@ export default function JobsPage() {
                     </div>
 
                     {/* Status */}
-                    <div className="w-24 text-right shrink-0">
+                    <div className="w-24 text-right shrink-0 flex items-center justify-end gap-1.5">
+                      {job.last_error && (
+                        <span title={job.last_error}><AlertCircle className="w-3.5 h-3.5 text-destructive" /></span>
+                      )}
                       <Badge
                         variant="secondary"
                         className={JOB_STATUS_CONFIG[job.status].color}
@@ -430,6 +434,27 @@ export default function JobsPage() {
                               {job.description || "No description available."}
                             </p>
                           </div>
+
+                          {/* Error / Retry Info */}
+                          {job.last_error && (
+                            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+                                <span className="text-sm font-medium text-destructive">
+                                  Apply Failed
+                                  {job.retry_count ? ` (${job.retry_count} attempt${job.retry_count > 1 ? 's' : ''})` : ''}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground font-mono break-all">
+                                {job.last_error}
+                              </p>
+                              {job.last_attempt_at && (
+                                <p className="text-xs text-muted-foreground">
+                                  Last attempt: {new Date(job.last_attempt_at).toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="space-y-3">
                           {job.salary_range && (

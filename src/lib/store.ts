@@ -328,6 +328,9 @@ function mapJob(row: Record<string, unknown>): Job {
     notes: (row.notes as string) || undefined,
     applied_at: (row.applied_at as string) || undefined,
     evaluation_id: (row.evaluation_id as string) || undefined,
+    retry_count: (row.retry_count as number) || 0,
+    last_error: (row.last_error as string) || undefined,
+    last_attempt_at: (row.last_attempt_at as string) || undefined,
   };
 }
 

@@ -151,6 +151,9 @@ export interface Job {
   notes?: string;
   applied_at?: string;
   evaluation_id?: string;
+  retry_count?: number;
+  last_error?: string;
+  last_attempt_at?: string;
 }
 
 export type JobSource = 'linkedin' | 'indeed' | 'glassdoor' | 'ziprecruiter' | 'other';
