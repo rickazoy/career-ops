@@ -128,3 +128,56 @@ export interface PortalCompany {
   category: string;
   greenhouse_id?: string;
 }
+
+// ============================================================================
+// Jobs Feed (populated by ThePopeBot, consumed by Career Ops)
+// ============================================================================
+
+export interface Job {
+  id: string;
+  created_at: string;
+  title: string;
+  company: string;
+  location: string;
+  url: string;
+  source: JobSource;
+  description: string;
+  salary_range?: string;
+  job_type?: string;
+  remote_type?: 'remote' | 'hybrid' | 'onsite';
+  posted_at?: string;
+  match_score?: number;
+  status: JobStatus;
+  notes?: string;
+  applied_at?: string;
+  evaluation_id?: string;
+}
+
+export type JobSource = 'linkedin' | 'indeed' | 'glassdoor' | 'ziprecruiter' | 'other';
+
+export type JobStatus =
+  | 'new'
+  | 'reviewed'
+  | 'queued'
+  | 'applying'
+  | 'applied'
+  | 'rejected'
+  | 'skipped';
+
+export const JOB_STATUS_CONFIG: Record<JobStatus, { label: string; color: string }> = {
+  new: { label: 'New', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-400' },
+  reviewed: { label: 'Reviewed', color: 'bg-purple-500/15 text-purple-700 dark:text-purple-400' },
+  queued: { label: 'Queued', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-400' },
+  applying: { label: 'Applying', color: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400' },
+  applied: { label: 'Applied', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' },
+  rejected: { label: 'Rejected', color: 'bg-red-500/15 text-red-700 dark:text-red-400' },
+  skipped: { label: 'Skipped', color: 'bg-zinc-500/15 text-zinc-700 dark:text-zinc-400' },
+};
+
+export const JOB_SOURCE_CONFIG: Record<JobSource, { label: string; color: string }> = {
+  linkedin: { label: 'LinkedIn', color: 'bg-blue-600/15 text-blue-700 dark:text-blue-400' },
+  indeed: { label: 'Indeed', color: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400' },
+  glassdoor: { label: 'Glassdoor', color: 'bg-green-500/15 text-green-700 dark:text-green-400' },
+  ziprecruiter: { label: 'ZipRecruiter', color: 'bg-orange-500/15 text-orange-700 dark:text-orange-400' },
+  other: { label: 'Other', color: 'bg-zinc-500/15 text-zinc-700 dark:text-zinc-400' },
+};

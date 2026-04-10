@@ -1,7 +1,7 @@
 "use client";
 
 import { getSupabaseClient, isSupabaseConfigured } from './supabase';
-import { JobEvaluation, Profile, InterviewPrep, STARStory, ApplicationStatus } from './types';
+import { JobEvaluation, Profile, InterviewPrep, STARStory, ApplicationStatus, Job, JobStatus } from './types';
 
 function db() {
   return getSupabaseClient()!;
@@ -232,6 +232,103 @@ export async function saveStory(story: STARStory): Promise<void> {
     });
 
   if (error) console.error('Failed to save story:', error);
+}
+
+// ============================================================================
+// Jobs Feed
+// ============================================================================
+
+export async function getJobs(filters?: {
+  status?: JobStatus[];
+  source?: string;
+  search?: string;
+}): Promise<Job[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  let query = db()
+    .from('co_jobs')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (filters?.status && filters.status.length > 0) {
+    query = query.in('status', filters.status);
+  }
+  if (filters?.source) {
+    query = query.eq('source', filters.source);
+  }
+  if (filters?.search) {
+    query = query.or(`title.ilike.%${filters.search}%,company.ilike.%${filters.search}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Failed to fetch jobs:', error);
+    return [];
+  }
+
+  return (data || []).map(mapJob);
+}
+
+export async function updateJobStatus(id: string, status: JobStatus): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+
+  const updates: Record<string, unknown> = { status };
+  if (status === 'applied') updates.applied_at = new Date().toISOString();
+
+  const { error } = await db()
+    .from('co_jobs')
+    .update(updates)
+    .eq('id', id);
+
+  if (error) console.error('Failed to update job status:', error);
+}
+
+export async function updateJobNotes(id: string, notes: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+
+  const { error } = await db()
+    .from('co_jobs')
+    .update({ notes })
+    .eq('id', id);
+
+  if (error) console.error('Failed to update job notes:', error);
+}
+
+export async function bulkUpdateJobStatus(ids: string[], status: JobStatus): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+
+  const updates: Record<string, unknown> = { status };
+  if (status === 'applied') updates.applied_at = new Date().toISOString();
+
+  const { error } = await db()
+    .from('co_jobs')
+    .update(updates)
+    .in('id', ids);
+
+  if (error) console.error('Failed to bulk update job status:', error);
+}
+
+function mapJob(row: Record<string, unknown>): Job {
+  return {
+    id: row.id as string,
+    created_at: row.created_at as string,
+    title: row.title as string,
+    company: row.company as string,
+    location: row.location as string,
+    url: row.url as string,
+    source: row.source as Job['source'],
+    description: row.description as string,
+    salary_range: (row.salary_range as string) || undefined,
+    job_type: (row.job_type as string) || undefined,
+    remote_type: (row.remote_type as Job['remote_type']) || undefined,
+    posted_at: (row.posted_at as string) || undefined,
+    match_score: row.match_score != null ? Number(row.match_score) : undefined,
+    status: row.status as JobStatus,
+    notes: (row.notes as string) || undefined,
+    applied_at: (row.applied_at as string) || undefined,
+    evaluation_id: (row.evaluation_id as string) || undefined,
+  };
 }
 
 // ============================================================================

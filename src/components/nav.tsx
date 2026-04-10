@@ -14,6 +14,7 @@ import {
   Moon,
   Sun,
   LogOut,
+  Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -21,6 +22,7 @@ import { useAuth } from "@/components/auth-provider";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/jobs", label: "Jobs", icon: Inbox },
   { href: "/evaluate", label: "Evaluate", icon: Search },
   { href: "/tracker", label: "Tracker", icon: Kanban },
   { href: "/resume", label: "Resume", icon: FileText },
