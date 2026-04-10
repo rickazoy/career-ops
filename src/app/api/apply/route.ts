@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         'x-api-key': popebotKey,
       },
       body: JSON.stringify({
-        prompt,
+        job: prompt,
         metadata: {
           type: 'job-apply',
           jobId: job.id,
