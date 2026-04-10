@@ -73,10 +73,16 @@ export async function POST(req: NextRequest) {
 
     return Response.json(JSON.parse(jsonMatch[0]));
   } catch (error) {
-    console.error("Resume error:", error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Resume generation failed" },
-      { status: 500 }
-    );
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Resume error:", msg);
+
+    if (msg.includes("api_key") || msg.includes("authentication") || msg.includes("401")) {
+      return Response.json(
+        { error: "Anthropic API key is missing or invalid. Check ANTHROPIC_API_KEY in Vercel env vars." },
+        { status: 500 }
+      );
+    }
+
+    return Response.json({ error: msg }, { status: 500 });
   }
 }
