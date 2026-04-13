@@ -25,24 +25,51 @@ export async function GET(request: NextRequest) {
 
   const cutoff = new Date(Date.now() - STUCK_THRESHOLD_MINUTES * 60000).toISOString();
 
-  // Find jobs that are stuck in queued (failed apply) or applying (never completed)
+  // First, just find all queued/applying jobs for debugging
+  const { data: allQueued, error: debugError } = await supabase
+    .from('co_jobs')
+    .select('id, status, retry_count, last_attempt_at, title')
+    .in('status', ['queued', 'applying']);
+
+  console.log(`[retry-apply] All queued/applying jobs: ${allQueued?.length || 0}`,
+    JSON.stringify(allQueued?.map(j => ({
+      id: j.id, status: j.status, retry_count: j.retry_count,
+      last_attempt_at: j.last_attempt_at, title: j.title
+    }))));
+
+  // Find retry-eligible jobs: queued or applying, under max retries, not attempted recently
   const { data: stuckJobs, error: queryError } = await supabase
     .from('co_jobs')
     .select('*')
-    .or(`status.eq.queued,status.eq.applying`)
+    .in('status', ['queued', 'applying'])
     .lt('retry_count', MAX_RETRIES)
-    .or(`last_attempt_at.is.null,last_attempt_at.lt.${cutoff}`)
     .order('created_at', { ascending: true })
-    .limit(5); // Process max 5 per cron run
+    .limit(5);
 
   if (queryError) {
     console.error('[retry-apply] Query error:', queryError.message);
     return NextResponse.json({ error: queryError.message }, { status: 500 });
   }
 
-  if (!stuckJobs || stuckJobs.length === 0) {
-    return NextResponse.json({ message: 'No stuck jobs', retried: 0 });
+  // Filter in JS for the time threshold (PostgREST OR with null is unreliable)
+  const eligible = (stuckJobs || []).filter(j => {
+    if (!j.last_attempt_at) return true;
+    return new Date(j.last_attempt_at) < new Date(cutoff);
+  });
+
+  if (eligible.length === 0) {
+    return NextResponse.json({
+      message: 'No stuck jobs',
+      retried: 0,
+      debug: {
+        total_queued: allQueued?.length || 0,
+        found_under_max_retries: stuckJobs?.length || 0,
+        cutoff,
+      }
+    });
   }
+
+  const stuckJobsFinal = eligible;
 
   console.log(`[retry-apply] Found ${stuckJobs.length} stuck jobs`);
 
@@ -63,7 +90,7 @@ export async function GET(request: NextRequest) {
 
   const results: Array<{ jobId: string; status: string; error?: string }> = [];
 
-  for (const job of stuckJobs) {
+  for (const job of stuckJobsFinal) {
     const previousStatus = job.status;
 
     // Log retry attempt
