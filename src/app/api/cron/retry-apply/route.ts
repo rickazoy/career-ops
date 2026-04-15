@@ -51,25 +51,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: queryError.message }, { status: 500 });
   }
 
-  // Filter in JS for the time threshold (PostgREST OR with null is unreliable)
-  const eligible = (stuckJobs || []).filter(j => {
-    if (!j.last_attempt_at) return true;
-    return new Date(j.last_attempt_at) < new Date(cutoff);
-  });
-
-  if (eligible.length === 0) {
+  // Skip time filtering — if it's queued and under max retries, just process it
+  if (!stuckJobs || stuckJobs.length === 0) {
     return NextResponse.json({
       message: 'No stuck jobs',
       retried: 0,
       debug: {
         total_queued: allQueued?.length || 0,
-        found_under_max_retries: stuckJobs?.length || 0,
+        found_under_max_retries: 0,
         cutoff,
       }
     });
   }
 
-  const stuckJobsFinal = eligible;
+  const stuckJobsFinal = stuckJobs;
 
   console.log(`[retry-apply] Found ${stuckJobs.length} stuck jobs`);
 
