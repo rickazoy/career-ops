@@ -161,17 +161,21 @@ export async function POST(request: NextRequest) {
 
     const agentJobId = (result.id as string) || (result.jobId as string) || '';
 
-    await log(supabase, jobId, 'apply_success', `Agent job created: ${agentJobId}`, {
-      status_before: 'applying',
-      status_after: 'applying',
-      popebot_job_id: agentJobId,
-    });
-
-    // Clear error on success
+    // Mark as applied — ThePopeBot accepted the job
     await supabase
       .from('co_jobs')
-      .update({ last_error: null })
+      .update({
+        status: 'applied',
+        applied_at: new Date().toISOString(),
+        last_error: null,
+      })
       .eq('id', jobId);
+
+    await log(supabase, jobId, 'apply_success', `Agent job created: ${agentJobId}`, {
+      status_before: 'applying',
+      status_after: 'applied',
+      popebot_job_id: agentJobId,
+    });
 
     return NextResponse.json({ success: true, agentJobId });
   } catch (err) {

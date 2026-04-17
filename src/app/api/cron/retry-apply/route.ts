@@ -159,6 +159,8 @@ export async function GET(request: NextRequest) {
         const agentJobId = (result.id as string) || '';
 
         await supabase.from('co_jobs').update({
+          status: 'applied',
+          applied_at: new Date().toISOString(),
           last_error: null,
         }).eq('id', job.id);
 
@@ -167,7 +169,7 @@ export async function GET(request: NextRequest) {
           action: 'apply_success',
           details: `Agent job created: ${agentJobId}`,
           status_before: 'applying',
-          status_after: 'applying',
+          status_after: 'applied',
           popebot_job_id: agentJobId,
         });
 
