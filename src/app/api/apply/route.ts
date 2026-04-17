@@ -167,19 +167,16 @@ export async function POST(request: NextRequest) {
 
     const agentJobId = (result.agent_job_id as string) || (result.id as string) || (result.jobId as string) || '';
 
-    // Mark as applied — ThePopeBot accepted the job
+    // Stay in 'applying' — ThePopeBot accepted but hasn't finished yet.
+    // Status moves to 'applied' only when the callback confirms success.
     await supabase
       .from('co_jobs')
-      .update({
-        status: 'applied',
-        applied_at: new Date().toISOString(),
-        last_error: null,
-      })
+      .update({ last_error: null })
       .eq('id', jobId);
 
-    await log(supabase, jobId, 'apply_success', `Agent job created: ${agentJobId}`, {
+    await log(supabase, jobId, 'apply_accepted', `Agent job created: ${agentJobId}. Waiting for callback.`, {
       status_before: 'applying',
-      status_after: 'applied',
+      status_after: 'applying',
       popebot_job_id: agentJobId,
     });
 

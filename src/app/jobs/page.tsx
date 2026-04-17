@@ -535,23 +535,34 @@ export default function JobsPage() {
                             </div>
                           )}
                           <div className="pt-2 flex flex-col gap-2">
-                            {job.status !== "applied" &&
-                              job.status !== "applying" && (
-                                <Button
-                                  className="w-full gap-2"
-                                  onClick={() =>
-                                    handleStatusChange(job.id, "queued")
-                                  }
-                                  disabled={isApplying}
-                                >
-                                  {isApplying ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Send className="w-4 h-4" />
+                            {job.status === "applying" && (
+                              <div className="flex items-center gap-2 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                                <Loader2 className="w-4 h-4 animate-spin text-cyan-500" />
+                                <div>
+                                  <p className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
+                                    Applying...
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    ThePopeBot is working on this application
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            {job.status === "applied" && (
+                              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                <CheckCheck className="w-4 h-4 text-emerald-500" />
+                                <div>
+                                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                                    Applied
+                                  </p>
+                                  {job.applied_at && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(job.applied_at).toLocaleString()}
+                                    </p>
                                   )}
-                                  Apply via ThePopeBot
-                                </Button>
-                              )}
+                                </div>
+                              </div>
+                            )}
                             <a
                               href={job.url}
                               target="_blank"

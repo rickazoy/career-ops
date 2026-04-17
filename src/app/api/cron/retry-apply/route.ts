@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   const { data: allQueued, error: debugError } = await supabase
     .from('co_jobs')
     .select('id, status, retry_count, last_attempt_at, title')
-    .in('status', ['queued', 'applying']);
+    .in('status', ['queued']);
 
   console.log(`[retry-apply] All queued/applying jobs: ${allQueued?.length || 0}`,
     JSON.stringify(allQueued?.map(j => ({
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   const { data: stuckJobs, error: queryError } = await supabase
     .from('co_jobs')
     .select('*')
-    .in('status', ['queued', 'applying'])
+    .in('status', ['queued'])
     .lt('retry_count', MAX_RETRIES)
     .order('created_at', { ascending: true })
     .limit(5);
@@ -159,17 +159,15 @@ export async function GET(request: NextRequest) {
         const agentJobId = (result.agent_job_id as string) || (result.id as string) || '';
 
         await supabase.from('co_jobs').update({
-          status: 'applied',
-          applied_at: new Date().toISOString(),
           last_error: null,
         }).eq('id', job.id);
 
         await supabase.from('co_job_logs').insert({
           job_id: job.id,
-          action: 'apply_success',
-          details: `Agent job created: ${agentJobId}`,
+          action: 'apply_accepted',
+          details: `Agent job created: ${agentJobId}. Waiting for callback.`,
           status_before: 'applying',
-          status_after: 'applied',
+          status_after: 'applying',
           popebot_job_id: agentJobId,
         });
 
