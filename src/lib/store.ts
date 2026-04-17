@@ -335,6 +335,38 @@ function mapJob(row: Record<string, unknown>): Job {
 }
 
 // ============================================================================
+// Job Logs
+// ============================================================================
+
+export interface JobLog {
+  id: string;
+  job_id: string;
+  action: string;
+  details: string;
+  status_before?: string;
+  status_after?: string;
+  popebot_job_id?: string;
+  created_at: string;
+}
+
+export async function getJobLogs(jobId: string): Promise<JobLog[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const { data, error } = await db()
+    .from('co_job_logs')
+    .select('*')
+    .eq('job_id', jobId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to fetch job logs:', error);
+    return [];
+  }
+
+  return (data || []) as JobLog[];
+}
+
+// ============================================================================
 // Helpers
 // ============================================================================
 

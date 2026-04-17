@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScoreBadge } from "@/components/score-badge";
-import { getJobs, updateJobStatus, bulkUpdateJobStatus } from "@/lib/store";
+import { getJobs, updateJobStatus, bulkUpdateJobStatus, getJobLogs, JobLog } from "@/lib/store";
 import {
   Job,
   JobStatus,
@@ -29,6 +29,7 @@ import {
   Inbox,
   Loader2,
   AlertCircle,
+  History,
   ChevronDown,
   ChevronUp,
   RefreshCw,
@@ -54,6 +55,7 @@ export default function JobsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [applying, setApplying] = useState<Set<string>>(new Set());
+  const [jobLogs, setJobLogs] = useState<Record<string, JobLog[]>>({});
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -314,7 +316,15 @@ export default function JobsPage() {
                     <button
                       className="flex-1 min-w-0 text-left"
                       onClick={() =>
-                        setExpandedId(isExpanded ? null : job.id)
+                        {
+                          const newId = isExpanded ? null : job.id;
+                          setExpandedId(newId);
+                          if (newId && !jobLogs[newId]) {
+                            getJobLogs(newId).then(logs => {
+                              setJobLogs(prev => ({ ...prev, [newId]: logs }));
+                            });
+                          }
+                        }
                       }
                     >
                       <div className="flex items-center gap-2">
@@ -453,6 +463,52 @@ export default function JobsPage() {
                                   Last attempt: {new Date(job.last_attempt_at).toLocaleString()}
                                 </p>
                               )}
+                            </div>
+                          )}
+
+                          {/* Activity Log */}
+                          {jobLogs[job.id] && jobLogs[job.id].length > 0 && (
+                            <div className="mt-3">
+                              <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                                <History className="w-3.5 h-3.5" />
+                                Activity Log
+                              </h4>
+                              <div className="space-y-1.5">
+                                {jobLogs[job.id].map((log) => (
+                                  <div
+                                    key={log.id}
+                                    className="flex items-start gap-2 text-xs"
+                                  >
+                                    <span
+                                      className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
+                                        log.action.includes("success") || log.action.includes("confirmed")
+                                          ? "bg-emerald-500"
+                                          : log.action.includes("failed") || log.action.includes("rejected")
+                                          ? "bg-red-500"
+                                          : "bg-blue-500"
+                                      }`}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-foreground">
+                                          {log.action.replace(/_/g, " ")}
+                                        </span>
+                                        <span className="text-muted-foreground">
+                                          {new Date(log.created_at).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      <p className="text-muted-foreground truncate">
+                                        {log.details}
+                                      </p>
+                                      {log.popebot_job_id && (
+                                        <p className="text-muted-foreground font-mono">
+                                          Agent Job: {log.popebot_job_id}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>

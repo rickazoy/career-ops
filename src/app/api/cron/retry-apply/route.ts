@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
       } else {
         let result: Record<string, unknown> = {};
         try { result = JSON.parse(responseText); } catch { result = { raw: responseText }; }
-        const agentJobId = (result.id as string) || '';
+        const agentJobId = (result.agent_job_id as string) || (result.id as string) || '';
 
         await supabase.from('co_jobs').update({
           status: 'applied',

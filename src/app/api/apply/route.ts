@@ -20,7 +20,7 @@ async function log(
   console.log(`[apply] job=${jobId} action=${action} ${details}`);
 }
 
-function buildPrompt(job: Record<string, unknown>, profile: Record<string, unknown> | null, resumeUrl: string) {
+function buildPrompt(job: Record<string, unknown>, profile: Record<string, unknown> | null, resumeUrl: string, callbackUrl: string) {
   const candidateName = (profile?.name as string) || 'the candidate';
   const resumeFilename = (profile?.resume_filename as string) || 'resume.pdf';
 
@@ -28,7 +28,7 @@ function buildPrompt(job: Record<string, unknown>, profile: Record<string, unkno
     ? `\n\nResume to upload: ${resumeUrl}\nResume filename: ${resumeFilename}\nFirst, download the resume from that URL, then upload it during the application process.`
     : '\n\nNo resume file is available. Fill in all fields manually using the candidate info above.';
 
-  return `Apply to this job on behalf of ${candidateName}:\n\nTitle: ${job.title}\nCompany: ${job.company}\nURL: ${job.url}\nSource: ${job.source}\nLocation: ${job.location}${resumeInstruction}\n\nUse Playwright to navigate to the job URL and complete the application. If it's a LinkedIn Easy Apply, use the Easy Apply flow. If it's Indeed, use the Indeed Apply flow. Upload the resume and fill in all required fields.`;
+  return `Apply to this job on behalf of ${candidateName}:\n\nTitle: ${job.title}\nCompany: ${job.company}\nURL: ${job.url}\nSource: ${job.source}\nLocation: ${job.location}${resumeInstruction}\n\nUse Playwright to navigate to the job URL and complete the application. If it's a LinkedIn Easy Apply, use the Easy Apply flow. If it's Indeed, use the Indeed Apply flow. Upload the resume and fill in all required fields.\n\nIMPORTANT — When you are done (whether successful or failed), you MUST report the result by running this curl command:\n\nIf successful:\ncurl -s -X POST ${callbackUrl} -H "Content-Type: application/json" -d '{"jobId":"${job.id}","status":"success","summary":"<brief description of what was done, e.g. Applied via LinkedIn Easy Apply, uploaded resume, filled all fields>"}'\n\nIf failed:\ncurl -s -X POST ${callbackUrl} -H "Content-Type: application/json" -d '{"jobId":"${job.id}","status":"failed","error":"<what went wrong, e.g. LinkedIn login required, CAPTCHA blocked, page not found>"}'\n\nDo NOT skip the callback — it is required for tracking.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -109,7 +109,13 @@ export async function POST(request: NextRequest) {
 
   // Call ThePopeBot
   try {
-    const prompt = buildPrompt(job, profile, resumeUrl);
+    // Build callback URL from the request origin
+    const origin = request.headers.get('origin')
+      || request.headers.get('x-forwarded-host')
+      || 'https://career-ops-six.vercel.app';
+    const callbackUrl = `${origin.startsWith('http') ? origin : `https://${origin}`}/api/apply-callback`;
+
+    const prompt = buildPrompt(job, profile, resumeUrl, callbackUrl);
 
     const res = await fetch(`${popebotUrl}/api/create-agent-job`, {
       method: 'POST',
@@ -159,7 +165,7 @@ export async function POST(request: NextRequest) {
       result = { raw: responseText };
     }
 
-    const agentJobId = (result.id as string) || (result.jobId as string) || '';
+    const agentJobId = (result.agent_job_id as string) || (result.id as string) || (result.jobId as string) || '';
 
     // Mark as applied — ThePopeBot accepted the job
     await supabase
