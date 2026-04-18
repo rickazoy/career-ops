@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScoreBadge } from "@/components/score-badge";
-import { getEvaluations } from "@/lib/store";
-import { JobEvaluation, STATUS_CONFIG, ApplicationStatus } from "@/lib/types";
+import { getEvaluations, getJobs } from "@/lib/store";
+import { JobEvaluation, STATUS_CONFIG, ApplicationStatus, Job } from "@/lib/types";
 import {
   Search,
   TrendingUp,
@@ -26,20 +26,28 @@ function cx(...classes: (string | undefined)[]) {
 
 export default function Dashboard() {
   const [evaluations, setEvaluations] = useState<JobEvaluation[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
 
   useEffect(() => {
     getEvaluations().then(setEvaluations);
+    getJobs().then(setJobs);
   }, []);
 
+  const jobApplied = jobs.filter(j => j.status === 'applied').length;
+  const jobApplying = jobs.filter(j => j.status === 'applying').length;
+
   const stats = {
-    total: evaluations.length,
-    applied: evaluations.filter(e => ['applied', 'responded', 'interview', 'offer'].includes(e.status)).length,
+    total: evaluations.length + jobs.length,
+    applied: evaluations.filter(e => ['applied', 'responded', 'interview', 'offer'].includes(e.status)).length + jobApplied,
+    applying: jobApplying,
     interviews: evaluations.filter(e => e.status === 'interview').length,
     offers: evaluations.filter(e => e.status === 'offer').length,
     avgScore: evaluations.length > 0
       ? evaluations.reduce((sum, e) => sum + e.global_score, 0) / evaluations.length
       : 0,
     strongMatches: evaluations.filter(e => e.global_score >= 4.5).length,
+    totalJobs: jobs.length,
+    newJobs: jobs.filter(j => j.status === 'new').length,
   };
 
   const statusCounts = evaluations.reduce((acc, e) => {
@@ -67,18 +75,18 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatsCard
-          title="Total Evaluated"
-          value={stats.total}
-          subtitle={`${stats.strongMatches} strong matches`}
+          title="Jobs Found"
+          value={stats.totalJobs}
+          subtitle={`${stats.newJobs} new to review`}
           icon={<Target className="w-5 h-5" />}
           color="text-primary"
         />
         <StatsCard
           title="Applied"
           value={stats.applied}
-          subtitle={`${stats.total > 0 ? ((stats.applied / stats.total) * 100).toFixed(0) : 0}% application rate`}
+          subtitle={stats.applying > 0 ? `${stats.applying} in progress` : `${stats.totalJobs > 0 ? ((stats.applied / stats.totalJobs) * 100).toFixed(0) : 0}% application rate`}
           icon={<FileCheck className="w-5 h-5" />}
           color="text-cyan-600 dark:text-cyan-400"
         />
@@ -90,9 +98,16 @@ export default function Dashboard() {
           color="text-amber-600 dark:text-amber-400"
         />
         <StatsCard
+          title="Evaluations"
+          value={evaluations.length}
+          subtitle={`${stats.strongMatches} strong matches`}
+          icon={<Search className="w-5 h-5" />}
+          color="text-purple-600 dark:text-purple-400"
+        />
+        <StatsCard
           title="Avg Score"
-          value={stats.avgScore.toFixed(1)}
-          subtitle="across all evaluations"
+          value={evaluations.length > 0 ? stats.avgScore.toFixed(1) : "—"}
+          subtitle="across evaluations"
           icon={<Star className="w-5 h-5" />}
           color="text-emerald-600 dark:text-emerald-400"
         />
