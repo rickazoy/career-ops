@@ -34,7 +34,9 @@ import {
   ChevronUp,
   RefreshCw,
   Briefcase,
+  Activity,
 } from "lucide-react";
+import { JobMonitor } from "@/components/job-monitor";
 
 const STATUS_TABS: { value: JobStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -47,6 +49,7 @@ const STATUS_TABS: { value: JobStatus | "all"; label: string }[] = [
 ];
 
 export default function JobsPage() {
+  const [view, setView] = useState<"jobs" | "monitor">("jobs");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -166,11 +169,41 @@ export default function JobsPage() {
             {statusCounts["new"] ? `\u00b7 ${statusCounts["new"]} new` : ""}
           </p>
         </div>
-        <Button variant="outline" className="gap-2" onClick={fetchJobs}>
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setView("jobs")}
+              className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1.5 transition-colors ${
+                view === "jobs" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Inbox className="w-3.5 h-3.5" />
+              Jobs
+            </button>
+            <button
+              onClick={() => setView("monitor")}
+              className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1.5 transition-colors ${
+                view === "monitor" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Monitor
+            </button>
+          </div>
+          {view === "jobs" && (
+            <Button variant="outline" className="gap-2" onClick={fetchJobs}>
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Monitor Tab */}
+      {view === "monitor" && <JobMonitor />}
+
+      {/* Jobs Tab */}
+      {view === "jobs" && <>
 
       {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -583,6 +616,8 @@ export default function JobsPage() {
           })}
         </div>
       )}
+
+      </>}
     </div>
   );
 }

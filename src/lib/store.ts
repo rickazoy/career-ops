@@ -366,6 +366,72 @@ export async function getJobLogs(jobId: string): Promise<JobLog[]> {
   return (data || []) as JobLog[];
 }
 
+export interface JobLogWithJob extends JobLog {
+  job_title?: string;
+  job_company?: string;
+  job_status?: string;
+}
+
+export async function getRecentLogs(limit: number = 50): Promise<JobLogWithJob[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const { data, error } = await db()
+    .from('co_job_logs')
+    .select('*, co_jobs(title, company, status)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Failed to fetch recent logs:', error);
+    return [];
+  }
+
+  return (data || []).map((row: Record<string, unknown>) => {
+    const job = row.co_jobs as Record<string, unknown> | null;
+    return {
+      id: row.id as string,
+      job_id: row.job_id as string,
+      action: row.action as string,
+      details: row.details as string,
+      status_before: (row.status_before as string) || undefined,
+      status_after: (row.status_after as string) || undefined,
+      popebot_job_id: (row.popebot_job_id as string) || undefined,
+      created_at: row.created_at as string,
+      job_title: (job?.title as string) || undefined,
+      job_company: (job?.company as string) || undefined,
+      job_status: (job?.status as string) || undefined,
+    };
+  });
+}
+
+export async function getApplyStats(): Promise<{
+  applying: number;
+  applied: number;
+  failed: number;
+  queued: number;
+  total: number;
+}> {
+  if (!isSupabaseConfigured()) return { applying: 0, applied: 0, failed: 0, queued: 0, total: 0 };
+
+  const { data, error } = await db()
+    .from('co_jobs')
+    .select('status');
+
+  if (error) {
+    console.error('Failed to fetch stats:', error);
+    return { applying: 0, applied: 0, failed: 0, queued: 0, total: 0 };
+  }
+
+  const jobs = data || [];
+  return {
+    applying: jobs.filter((j: Record<string, unknown>) => j.status === 'applying').length,
+    applied: jobs.filter((j: Record<string, unknown>) => j.status === 'applied').length,
+    failed: jobs.filter((j: Record<string, unknown>) => j.status === 'queued' && false).length, // queued with errors tracked via logs
+    queued: jobs.filter((j: Record<string, unknown>) => j.status === 'queued').length,
+    total: jobs.length,
+  };
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================
